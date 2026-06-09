@@ -1,30 +1,3 @@
-"""
-LLM-based entity and relationship extractor.
-
-Takes a text chunk and uses GPT-4o with structured output to extract:
-
-Nodes:
-  Company      — businesses, manufacturers, suppliers, logistics firms
-  Country      — nation states, territories
-  Port         — seaports, airports, land border crossings
-  Product      — semiconductors, raw materials, components, commodities
-  RiskEvent    — disruptions, strikes, sanctions, disasters, shortages
-  Regulation   — laws, bans, export controls, tariffs
-
-Relationships (directed):
-  SUPPLIES         Company → Company     (A supplies components to B)
-  DEPENDS_ON       Company → Product     (A needs product P)
-  PRODUCES         Company → Product     (A manufactures P)
-  LOCATED_IN       Company → Country     (A is headquartered/operates in C)
-  SHIPS_THROUGH    Company → Port        (A uses port P)
-  AFFECTED_BY      Company → RiskEvent   (A is impacted by event E)
-  AFFECTS          RiskEvent → Country   (event E hits country C)
-  AFFECTS          RiskEvent → Company   (event E hits company A)
-  RESTRICTS        Regulation → Product  (reg R bans/limits product P)
-  TARGETS          Regulation → Country  (reg R applies to country C)
-  HAS_PORT         Country → Port        (country C has port P)
-"""
-
 import hashlib
 import json
 from typing import Any
