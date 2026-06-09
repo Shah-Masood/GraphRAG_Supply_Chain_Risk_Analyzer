@@ -1,18 +1,3 @@
-"""
-Graph ingestion pipeline.
-
-Takes an already-ingested document (chunks in ChromaDB, metadata in Postgres)
-and builds the knowledge graph in Neo4j: extract entities + relationships from
-chunks, then MERGE them into the graph.
-
-Entry point:
-    from supply_chain.graph.pipeline import build_graph_from_doc
-
-    await build_graph_from_doc(doc_id, chunks, metadata)
-
-This is called automatically at the end of the standard ingestion pipeline.
-"""
-
 import uuid
 from typing import Any
 
