@@ -1,0 +1,58 @@
+version: "3.9"
+
+services:
+
+  # ── PostgreSQL ───────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: supply_chain_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./src/supply_chain/database/migrations/001_initial.sql:/docker-entrypoint-initdb.d/001_initial.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ── ChromaDB ─────────────────────────────────────────────────────────────────
+  chromadb:
+    image: chromadb/chroma:latest
+    volumes:
+      - chroma_data:/data
+    ports:
+      - "8001:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8000/api/v1/heartbeat || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ── FastAPI app ───────────────────────────────────────────────────────────────
+  app:
+    build: .
+    env_file: .env
+    environment:
+      # Override localhost references — use service names inside Docker network
+      DATABASE_URL: postgresql://postgres:${DB_PASSWORD}@postgres:5432/supply_chain_db
+      CHROMA_HOST: chromadb
+      CHROMA_PORT: 8000
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      chromadb:
+        condition: service_healthy
+    volumes:
+      - ./src:/app/src   # live reload in dev — remove in prod
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  chroma_data:

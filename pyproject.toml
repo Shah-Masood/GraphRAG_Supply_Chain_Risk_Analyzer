@@ -1,0 +1,74 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "supply-chain-risk-analyzer"
+version = "0.1.0"
+description = "AI-powered supply chain risk analysis with RAG + LangGraph agents"
+requires-python = ">=3.11"
+dependencies = [
+    # Web framework
+    "fastapi>=0.111.0",
+    "uvicorn[standard]>=0.29.0",
+
+    # Database
+    "asyncpg>=0.29.0",
+
+    # Vector store
+    "chromadb>=0.5.0",
+
+    # LangChain / LangGraph
+    "langchain>=0.2.0",
+    "langchain-openai>=0.1.0",
+    "langchain-community>=0.2.0",
+    "langgraph>=0.1.0",
+    "langgraph-checkpoint-postgres>=1.0.0",
+
+    # OpenAI
+    "openai>=1.30.0",
+
+    # Document processing
+    "pypdf>=4.2.0",
+    "tiktoken>=0.7.0",
+
+    # HTTP client (async)
+    "httpx>=0.27.0",
+
+    # Config
+    "pydantic-settings>=2.2.0",
+    "python-dotenv>=1.0.0",
+
+    # Utilities
+    "tenacity>=8.3.0",       # retry logic for external APIs
+    "structlog>=24.1.0",     # structured logging
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.2.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-cov>=5.0.0",
+    "httpx>=0.27.0",         # TestClient
+    "ruff>=0.4.0",
+    "mypy>=1.10.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/supply_chain"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+ignore_missing_imports = true
