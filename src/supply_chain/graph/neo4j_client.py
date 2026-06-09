@@ -1,24 +1,3 @@
-"""
-Async Neo4j driver — singleton used across the app.
-
-Usage:
-    from supply_chain.graph.neo4j_client import graph_db
-
-    await graph_db.connect()
-
-    # Read
-    records = await graph_db.query(
-        "MATCH (c:Company {name: $name})-[:SUPPLIES]->(s) RETURN s.name AS supplier",
-        name="TSMC"
-    )
-
-    # Write
-    await graph_db.write(
-        "MERGE (c:Company {name: $name}) SET c.country = $country",
-        name="TSMC", country="Taiwan"
-    )
-"""
-
 from typing import Any
 
 import structlog
