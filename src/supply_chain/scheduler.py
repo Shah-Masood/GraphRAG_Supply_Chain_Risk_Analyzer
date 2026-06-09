@@ -1,20 +1,3 @@
-"""
-Background scheduler for automatic knowledge base refresh.
-
-Jobs:
-    refresh_news_kb   — runs every 6 hours, ingests latest news for all
-                        default supply chain risk queries + all known supplier names
-
-Uses APScheduler with AsyncIOScheduler so it plays nicely with FastAPI's
-async event loop.
-
-Usage (called from lifespan in main.py):
-    from supply_chain.scheduler import start_scheduler, stop_scheduler
-    scheduler = start_scheduler()
-    ...
-    stop_scheduler(scheduler)
-"""
-
 import asyncio
 
 import structlog
