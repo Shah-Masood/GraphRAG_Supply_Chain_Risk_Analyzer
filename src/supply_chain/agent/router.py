@@ -1,13 +1,3 @@
-"""
-Agent API router.
-
-Endpoints:
-    POST /agent/chat            — send a message, get a streaming SSE response
-    POST /agent/sessions        — create a new named session
-    GET  /agent/sessions/{id}   — get session info + message history
-    GET  /agent/sessions        — list all sessions for a user
-"""
-
 import json
 import uuid
 from typing import AsyncGenerator
