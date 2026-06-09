@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Supply Chain Risk Analyzer</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0f1117; color: #e2e8f0;
+      height: 100vh; display: flex; flex-direction: column;
+    }
+    header {
+      padding: 16px 24px; background: #1a1d27;
+      border-bottom: 1px solid #2d3148;
+      display: flex; align-items: center; gap: 12px;
+    }
+    header .logo { font-size: 20px; }
+    header h1 { font-size: 16px; font-weight: 600; color: #f1f5f9; }
+    header .subtitle { font-size: 12px; color: #64748b; margin-top: 2px; }
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #22c55e; margin-left: auto; box-shadow: 0 0 6px #22c55e;
+    }
+    .status-dot.offline { background: #ef4444; box-shadow: 0 0 6px #ef4444; }
+    #stats-bar {
+      padding: 8px 24px; background: #13151f;
+      border-bottom: 1px solid #1e2133;
+      display: flex; gap: 24px; font-size: 12px; color: #64748b;
+    }
+    #stats-bar span b { color: #94a3b8; }
+    #chat {
+      flex: 1; overflow-y: auto; padding: 24px;
+      display: flex; flex-direction: column; gap: 20px;
+    }
+    .message { max-width: 820px; width: 100%; }
+    .message.user { align-self: flex-end; }
+    .message.assistant { align-self: flex-start; }
+    .bubble {
+      padding: 12px 16px; border-radius: 12px;
+      line-height: 1.6; font-size: 14px; white-space: pre-wrap; word-break: break-word;
+    }
+    .message.user .bubble { background: #2563eb; color: #fff; border-bottom-right-radius: 4px; }
+    .message.assistant .bubble { background: #1e2133; color: #e2e8f0; border-bottom-left-radius: 4px; }
+    .tool-events { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+    .tool-pill {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 500;
+    }
+    .tool-pill.running { background: #1e3a5f; color: #60a5fa; border: 1px solid #2563eb44; }
+    .tool-pill.done { background: #14291a; color: #4ade80; border: 1px solid #22c55e44; }
+    .tool-pill .dot { width: 6px; height: 6px; border-radius: 50%; }
+    .tool-pill.running .dot { background: #60a5fa; animation: pulse 1s infinite; }
+    .tool-pill.done .dot { background: #4ade80; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+    .cursor::after { content: "▋"; animation: blink 0.8s infinite; color: #60a5fa; }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+    #suggestions { padding: 0 24px 12px; display: flex; flex-wrap: wrap; gap: 8px; }
+    .suggestion {
+      padding: 6px 14px; background: #1a1d27;
+      border: 1px solid #2d3148; border-radius: 20px;
+      font-size: 12px; color: #94a3b8; cursor: pointer; transition: all 0.15s;
+    }
+    .suggestion:hover { background: #252840; color: #e2e8f0; border-color: #4b5680; }
+    #input-area {
+      padding: 16px 24px; background: #1a1d27;
+      border-top: 1px solid #2d3148;
+      display: flex; gap: 10px; align-items: flex-end;
+    }
+    #msg-input {
+      flex: 1; background: #0f1117; border: 1px solid #2d3148;
+      border-radius: 10px; padding: 10px 14px; color: #e2e8f0;
+      font-size: 14px; resize: none; min-height: 44px; max-height: 140px;
+      outline: none; font-family: inherit; transition: border-color 0.15s;
+    }
+    #msg-input:focus { border-color: #3b4fd8; }
+    #msg-input::placeholder { color: #475569; }
+    #send-btn {
+      padding: 10px 20px; background: #2563eb; color: #fff;
+      border: none; border-radius: 10px; font-size: 14px; font-weight: 500;
+      cursor: pointer; transition: background 0.15s; white-space: nowrap;
+    }
+    #send-btn:hover { background: #1d4ed8; }
+    #send-btn:disabled { background: #1e2d5a; color: #4b6cb7; cursor: not-allowed; }
+    #session-info { font-size: 11px; color: #475569; text-align: center; padding: 4px 0 0; }
+    #session-info a { color: #3b82f6; cursor: pointer; text-decoration: none; }
+    #session-info a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<header>
+  <div class="logo">⛓️</div>
+  <div>
+    <h1>Supply Chain Risk Analyzer</h1>
+    <div class="subtitle">Powered by LangGraph + GPT-4o + ChromaDB</div>
+  </div>
+  <div class="status-dot" id="status-dot"></div>
+</header>
+<div id="stats-bar">
+  <span>Documents: <b id="stat-docs">—</b></span>
+  <span>Chunks: <b id="stat-chunks">—</b></span>
+  <span>Session: <b id="stat-session">new</b></span>
+</div>
+<div id="chat"></div>
+<div id="suggestions">
+  <div class="suggestion" onclick="useSuggestion(this)">What are the biggest supply chain risks right now?</div>
+  <div class="suggestion" onclick="useSuggestion(this)">Analyze risk for TSMC</div>
+  <div class="suggestion" onclick="useSuggestion(this)">What's happening with rare earth supply chains?</div>
+  <div class="suggestion" onclick="useSuggestion(this)">Show me all suppliers and their risk scores</div>
+  <div class="suggestion" onclick="useSuggestion(this)">Any port disruptions or shipping delays?</div>
+</div>
+<div id="input-area">
+  <textarea id="msg-input" placeholder="Ask about supply chain risks, suppliers, disruptions..." rows="1"></textarea>
+  <button id="send-btn" onclick="sendMessage()">Send</button>
+</div>
+<div id="session-info">
+  <span id="thread-display">No active session</span> ·
+  <a onclick="newSession()">New session</a>
+</div>
+<script>
+  const API = 'http://localhost:8000';
+  let threadId = localStorage.getItem('sc_thread_id') || null;
+  let isStreaming = false;
+
+  async function init() {
+    await checkHealth();
+    await loadStats();
+    if (threadId) {
+      document.getElementById('stat-session').textContent = threadId.slice(0, 8) + '...';
+      document.getElementById('thread-display').textContent = 'Session: ' + threadId.slice(0, 8);
+    }
+  }
+
+  async function checkHealth() {
+    try {
+      const r = await fetch(`${API}/health`);
+      const data = await r.json();
+      const dot = document.getElementById('status-dot');
+      dot.className = 'status-dot' + (data.status === 'ok' ? '' : ' offline');
+    } catch { document.getElementById('status-dot').className = 'status-dot offline'; }
+  }
+
+  async function loadStats() {
+    try {
+      const r = await fetch(`${API}/ingest/stats`);
+      const data = await r.json();
+      document.getElementById('stat-docs').textContent = data.total_documents;
+      document.getElementById('stat-chunks').textContent = data.total_chunks;
+    } catch {}
+  }
+
+  async function sendMessage() {
+    const input = document.getElementById('msg-input');
+    const text = input.value.trim();
+    if (!text || isStreaming) return;
+    input.value = '';
+    input.style.height = 'auto';
+    hideSuggestions();
+    isStreaming = true;
+    document.getElementById('send-btn').disabled = true;
+    appendMessage('user', text);
+    const assistantEl = appendMessage('assistant', '');
+    const bubbleEl = assistantEl.querySelector('.bubble');
+    const toolsEl = assistantEl.querySelector('.tool-events');
+    bubbleEl.classList.add('cursor');
+    try {
+      const response = await fetch(`${API}/agent/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text, thread_id: threadId }),
+      });
+      const newThread = response.headers.get('X-Thread-ID');
+      if (newThread && newThread !== threadId) {
+        threadId = newThread;
+        localStorage.setItem('sc_thread_id', threadId);
+        document.getElementById('stat-session').textContent = threadId.slice(0, 8) + '...';
+        document.getElementById('thread-display').textContent = 'Session: ' + threadId.slice(0, 8);
+      }
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let content = '';
+      const activePills = {};
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop();
+        let event = null;
+        for (const line of lines) {
+          if (line.startsWith('event: ')) {
+            event = line.slice(7).trim();
+          } else if (line.startsWith('data: ') && event) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              if (event === 'token') {
+                content += data.content;
+                bubbleEl.textContent = content;
+                bubbleEl.classList.add('cursor');
+                scrollChat();
+              } else if (event === 'tool_start') {
+                const pill = document.createElement('div');
+                pill.className = 'tool-pill running';
+                pill.innerHTML = '<div class="dot"></div>' + formatToolName(data.tool);
+                toolsEl.appendChild(pill);
+                activePills[data.tool] = pill;
+              } else if (event === 'tool_end') {
+                const pill = activePills[data.tool];
+                if (pill) { pill.className = 'tool-pill done'; pill.querySelector('.dot').style.animation = 'none'; }
+              } else if (event === 'done') {
+                bubbleEl.classList.remove('cursor');
+                await loadStats();
+              } else if (event === 'error') {
+                bubbleEl.textContent = 'Error: ' + data.message;
+                bubbleEl.classList.remove('cursor');
+              }
+            } catch {}
+            event = null;
+          }
+        }
+      }
+    } catch (err) {
+      bubbleEl.textContent = 'Connection error: ' + err.message;
+      bubbleEl.classList.remove('cursor');
+    }
+    isStreaming = false;
+    document.getElementById('send-btn').disabled = false;
+    document.getElementById('msg-input').focus();
+  }
+
+  function appendMessage(role, text) {
+    const chat = document.getElementById('chat');
+    const div = document.createElement('div');
+    div.className = 'message ' + role;
+    div.innerHTML = (role === 'assistant' ? '<div class="tool-events"></div>' : '') +
+      '<div class="bubble">' + escapeHtml(text) + '</div>';
+    chat.appendChild(div);
+    scrollChat();
+    return div;
+  }
+
+  function scrollChat() { const c = document.getElementById('chat'); c.scrollTop = c.scrollHeight; }
+  function escapeHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function formatToolName(n) {
+    return {'retrieve_supply_chain_docs':'🔍 Searching KB','fetch_news_for_supplier':'📰 Fetching news',
+            'query_supplier_db':'🏭 Querying suppliers','calculate_risk_score':'📊 Scoring risk'}[n] || n;
+  }
+  function hideSuggestions() { document.getElementById('suggestions').style.display = 'none'; }
+  function useSuggestion(el) { document.getElementById('msg-input').value = el.textContent; sendMessage(); }
+  function newSession() {
+    threadId = null; localStorage.removeItem('sc_thread_id');
+    document.getElementById('chat').innerHTML = '';
+    document.getElementById('suggestions').style.display = 'flex';
+    document.getElementById('stat-session').textContent = 'new';
+    document.getElementById('thread-display').textContent = 'No active session';
+  }
+  const textarea = document.getElementById('msg-input');
+  textarea.addEventListener('input', () => { textarea.style.height = 'auto'; textarea.style.height = Math.min(textarea.scrollHeight, 140) + 'px'; });
+  textarea.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
+  init();
+</script>
+</body>
+</html>
